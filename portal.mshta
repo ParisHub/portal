@@ -1,0 +1,486 @@
+<html>
+<head>
+  <title>PORTAL</title>
+  <hta:application
+    id="portalApp"
+    applicationname="PORTAL"
+    border="thin"
+    caption="yes"
+    maximizebutton="no"
+    minimizebutton="yes"
+    singleinstance="yes"
+    sysmenu="yes"
+    scroll="no"
+  />
+  <meta http-equiv="x-ua-compatible" content="IE=9" />
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --panel: #ffffff;
+      --panel-soft: #f9fafb;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #d1d5db;
+      --button: #2563eb;
+      --button-hover: #1d4ed8;
+      --button-text: #ffffff;
+      --accent: #10b981;
+      --shadow: rgba(17, 24, 39, 0.10);
+      --launcher: #0ea5e9;
+      --launcher-hover: #0284c7;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      background: linear-gradient(160deg, var(--bg), var(--panel-soft));
+      color: var(--text);
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      box-sizing: border-box;
+      padding: 16px;
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 8px 20px var(--shadow);
+    }
+
+    #toolbar {
+      padding: 14px;
+    }
+
+    #toolbarTop {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    #toolbar h2 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    #themeButton {
+      background: var(--accent);
+      border-color: var(--accent);
+      min-width: 125px;
+    }
+
+    #editorGrid {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 8px;
+    }
+
+    input, button {
+      box-sizing: border-box;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      padding: 9px 10px;
+      font-family: inherit;
+      outline: none;
+    }
+
+    input {
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    input:focus {
+      border-color: var(--button);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+    }
+
+    button {
+      cursor: pointer;
+      background: var(--button);
+      border-color: var(--button);
+      color: var(--button-text);
+      font-weight: 600;
+    }
+
+    button:hover {
+      background: var(--button-hover);
+      border-color: var(--button-hover);
+    }
+
+    #status {
+      margin-top: 8px;
+      min-height: 16px;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    #content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px;
+      overflow: auto;
+    }
+
+    #title {
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: 4px;
+      user-select: none;
+    }
+
+    #subtitle {
+      margin-top: -3px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    #buttons {
+      width: 100%;
+      max-width: 420px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    #buttons button {
+      width: 100%;
+      background: var(--launcher);
+      border-color: var(--launcher);
+      padding: 11px 10px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    #buttons button:hover {
+      background: var(--launcher-hover);
+      border-color: var(--launcher-hover);
+    }
+
+    #hint {
+      color: var(--muted);
+      font-size: 11px;
+      text-align: center;
+      max-width: 470px;
+    }
+  </style>
+  <script language="javascript">
+    var fso = null;
+    var shell = null;
+    var dbPath = "";
+
+    var themes = [
+      {
+        name: "Hell",
+        vars: {
+          "--bg": "#f3f4f6", "--panel": "#ffffff", "--panel-soft": "#f9fafb", "--text": "#1f2937",
+          "--muted": "#6b7280", "--border": "#d1d5db", "--button": "#2563eb", "--button-hover": "#1d4ed8",
+          "--button-text": "#ffffff", "--accent": "#10b981", "--shadow": "rgba(17, 24, 39, 0.10)",
+          "--launcher": "#0ea5e9", "--launcher-hover": "#0284c7"
+        }
+      },
+      {
+        name: "Dunkel",
+        vars: {
+          "--bg": "#0b1220", "--panel": "#111827", "--panel-soft": "#0f172a", "--text": "#e5e7eb",
+          "--muted": "#9ca3af", "--border": "#374151", "--button": "#6366f1", "--button-hover": "#4f46e5",
+          "--button-text": "#ffffff", "--accent": "#14b8a6", "--shadow": "rgba(0, 0, 0, 0.35)",
+          "--launcher": "#0284c7", "--launcher-hover": "#0369a1"
+        }
+      },
+      {
+        name: "Forest",
+        vars: {
+          "--bg": "#ecfdf5", "--panel": "#ffffff", "--panel-soft": "#f0fdf4", "--text": "#14532d",
+          "--muted": "#166534", "--border": "#86efac", "--button": "#16a34a", "--button-hover": "#15803d",
+          "--button-text": "#ffffff", "--accent": "#0ea5e9", "--shadow": "rgba(20, 83, 45, 0.15)",
+          "--launcher": "#22c55e", "--launcher-hover": "#16a34a"
+        }
+      },
+      {
+        name: "Violet",
+        vars: {
+          "--bg": "#f5f3ff", "--panel": "#ffffff", "--panel-soft": "#ede9fe", "--text": "#312e81",
+          "--muted": "#6d28d9", "--border": "#c4b5fd", "--button": "#7c3aed", "--button-hover": "#6d28d9",
+          "--button-text": "#ffffff", "--accent": "#db2777", "--shadow": "rgba(76, 29, 149, 0.16)",
+          "--launcher": "#8b5cf6", "--launcher-hover": "#7c3aed"
+        }
+      }
+    ];
+
+    var themeIndex = 0;
+
+    function initApp() {
+      try { window.resizeTo(760, 600); } catch (e) {}
+
+      try {
+        fso = new ActiveXObject("Scripting.FileSystemObject");
+        shell = new ActiveXObject("WScript.Shell");
+      } catch (e) {
+        setStatus("ActiveX konnte nicht initialisiert werden: " + e.message, true);
+        return;
+      }
+
+      dbPath = getDbPath();
+      ensureDbFile();
+      applyTheme(0);
+      loadEntries();
+    }
+
+    function getDbPath() {
+      var path = decodeURIComponent(location.pathname || "");
+
+      if (path.indexOf("/") === 0 && path.charAt(2) === ":") {
+        path = path.substring(1);
+      }
+
+      path = path.replace(/\//g, "\\");
+      var folder = path.substring(0, path.lastIndexOf("\\"));
+      return folder + "\\portaldb.txt";
+    }
+
+    function ensureDbFile() {
+      if (!fso.FileExists(dbPath)) {
+        var file = fso.CreateTextFile(dbPath, true, true);
+        file.WriteLine("# Name|Value");
+        file.WriteLine("# Automatische Typ-Erkennung:");
+        file.WriteLine("# - In \"...\" oder '...' = Clipboard");
+        file.WriteLine("# - Alles andere = Link (Ordner, Datei, EXE, URL, App-URI)");
+        file.Close();
+      }
+    }
+
+    function readDbLines() {
+      var lines = [];
+      if (!fso.FileExists(dbPath)) return lines;
+
+      var file = fso.OpenTextFile(dbPath, 1, false, -1);
+      while (!file.AtEndOfStream) {
+        lines.push(file.ReadLine());
+      }
+      file.Close();
+      return lines;
+    }
+
+    function parseLine(line) {
+      var trimmed = trim(line);
+      if (trimmed === "" || trimmed.indexOf("#") === 0) return null;
+
+      var parts = trimmed.split("|");
+      if (parts.length < 2) return null;
+
+      var name = trim(parts[0]);
+      var value = "";
+      var type = "";
+
+      if (parts.length >= 3) {
+        var legacyType = toLower(trim(parts[1]));
+        value = trim(parts.slice(2).join("|"));
+
+        if (legacyType === "clipboard") {
+          type = "Clipboard";
+        } else {
+          type = "Link";
+        }
+      } else {
+        value = trim(parts.slice(1).join("|"));
+        type = detectTypeFromValue(value);
+      }
+
+      if (name === "" || value === "") return null;
+
+      return {
+        name: name,
+        type: type,
+        value: value
+      };
+    }
+
+    function detectTypeFromValue(rawValue) {
+      var val = trim(rawValue);
+      if (isWrappedInQuotes(val)) return "Clipboard";
+      return "Link";
+    }
+
+    function isWrappedInQuotes(text) {
+      if (!text || text.length < 2) return false;
+      var first = text.charAt(0);
+      var last = text.charAt(text.length - 1);
+      return (first === '"' && last === '"') || (first === "'" && last === "'");
+    }
+
+    function loadEntries() {
+      var holder = document.getElementById("buttons");
+      holder.innerHTML = "";
+
+      var lines = readDbLines();
+      var count = 0;
+
+      for (var i = 0; i < lines.length; i++) {
+        var entry = parseLine(lines[i]);
+        if (!entry) continue;
+
+        var btn = document.createElement("button");
+        btn.innerText = entry.name;
+        btn.title = entry.type + ": " + entry.value;
+        btn.setAttribute("data-type", entry.type);
+        btn.setAttribute("data-value", entry.value);
+        btn.onclick = function() {
+          runAction(this.getAttribute("data-type"), this.getAttribute("data-value"));
+        };
+
+        holder.appendChild(btn);
+        count++;
+      }
+
+      setStatus(count > 0 ? (count + " Button(s) geladen.") : "Noch keine Einträge vorhanden.", false);
+    }
+
+    function runAction(type, rawValue) {
+      var normalizedType = toLower(trim(type));
+      var value = stripOptionalQuotes(trim(rawValue));
+
+      if (normalizedType === "clipboard") {
+        copyToClipboard(value);
+      } else {
+        openLink(value);
+      }
+    }
+
+    function openLink(target) {
+      if (target === "") {
+        setStatus("Link ohne Ziel.", true);
+        return;
+      }
+
+      try {
+        shell.Run('"' + target + '"', 1, false);
+        setStatus("Geöffnet: " + target, false);
+      } catch (e1) {
+        try {
+          shell.Run('explorer.exe "' + target + '"', 1, false);
+          setStatus("Im Explorer geöffnet: " + target, false);
+        } catch (e2) {
+          setStatus("Konnte Link/App nicht öffnen.", true);
+        }
+      }
+    }
+
+    function copyToClipboard(text) {
+      try {
+        if (window.clipboardData) {
+          window.clipboardData.setData("Text", text);
+        } else {
+          var htmlfile = new ActiveXObject("htmlfile");
+          htmlfile.parentWindow.clipboardData.setData("Text", text);
+        }
+        setStatus("In Zwischenablage kopiert.", false);
+      } catch (e) {
+        setStatus("Clipboard fehlgeschlagen: " + e.message, true);
+      }
+    }
+
+    function addEntry() {
+      var name = trim(document.getElementById("inputName").value);
+      var value = trim(document.getElementById("inputValue").value);
+
+      if (name === "" || value === "") {
+        setStatus("Bitte Name und Ziel/Text ausfüllen.", true);
+        return;
+      }
+
+      var type = detectTypeFromValue(value);
+      var line = name + "|" + value;
+
+      try {
+        var file = fso.OpenTextFile(dbPath, 8, true, -1);
+        file.WriteLine(line);
+        file.Close();
+
+        document.getElementById("inputName").value = "";
+        document.getElementById("inputValue").value = "";
+
+        setStatus("Eintrag gespeichert als " + type + ".", false);
+        loadEntries();
+      } catch (e) {
+        setStatus("Speichern fehlgeschlagen: " + e.message, true);
+      }
+    }
+
+    function nextTheme() {
+      themeIndex = (themeIndex + 1) % themes.length;
+      applyTheme(themeIndex);
+      setStatus("Theme: " + themes[themeIndex].name, false);
+    }
+
+    function applyTheme(index) {
+      var i = index % themes.length;
+      var selected = themes[i];
+      var vars = selected.vars;
+
+      for (var key in vars) {
+        if (vars.hasOwnProperty(key)) {
+          document.documentElement.style.setProperty(key, vars[key]);
+        }
+      }
+
+      document.getElementById("themeButton").innerText = "Theme: " + selected.name;
+    }
+
+    function setStatus(message, isError) {
+      var el = document.getElementById("status");
+      el.style.color = isError ? "#dc2626" : "var(--muted)";
+      el.innerText = message;
+    }
+
+    function trim(text) {
+      return (text || "").replace(/^\s+|\s+$/g, "");
+    }
+
+    function toLower(text) {
+      return (text || "").toLowerCase();
+    }
+
+    function stripOptionalQuotes(text) {
+      if (isWrappedInQuotes(text)) return text.substring(1, text.length - 1);
+      return text;
+    }
+  </script>
+</head>
+<body onload="initApp()">
+  <div id="app">
+    <div id="toolbar" class="card">
+      <div id="toolbarTop">
+        <h2>Neuen PORTAL-Button hinzufügen</h2>
+        <button id="themeButton" onclick="nextTheme()">Theme: Hell</button>
+      </div>
+      <div id="editorGrid">
+        <input id="inputName" type="text" placeholder="Name (Button-Titel)" />
+        <input id="inputValue" type="text" placeholder="Ziel oder Text (Text in \"...\" = Clipboard)" />
+        <button onclick="addEntry()">Hinzufügen</button>
+      </div>
+      <div id="status"></div>
+    </div>
+
+    <div id="content" class="card">
+      <div id="title">PORTAL</div>
+      <div id="subtitle">Link öffnet Ordner/Datei/App, "Text" kopiert in die Zwischenablage</div>
+      <div id="buttons"></div>
+      <div id="hint">Beispiele: <b>Tools|C:\\Windows\\System32\\notepad.exe</b> oder <b>Hallo|"Hello World"</b></div>
+    </div>
+  </div>
+</body>
+</html>

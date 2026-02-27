@@ -1,0 +1,4 @@
+# Name|Value
+Finanzen|C:\Data\Fin
+Notepad|C:\Windows\System32\notepad.exe
+Hallo|"Hello World"
