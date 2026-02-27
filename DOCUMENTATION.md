@@ -3,10 +3,10 @@
 Diese Doku beschreibt **nur den aktuellen Stand** im Repository.
 
 ## Überblick
-`portal.mshta` ist eine kleine, lokale Windows-10-HTA-Anwendung ohne externe Abhängigkeiten. Sie liest eine Datei `portaldb.txt` aus dem gleichen Ordner, erzeugt daraus Buttons und führt pro Button eine Aktion aus.
+`portal.hta` ist eine kleine, lokale Windows-10-HTA-Anwendung ohne externe Abhängigkeiten. Sie liest eine Datei `portaldb.txt` aus dem gleichen Ordner, erzeugt daraus Buttons und führt pro Button eine Aktion aus.
 
 ## Dateien
-- `portal.mshta`  
+- `portal.hta`  
   Enthält UI, Parsing, Dateizugriffe und Aktionslogik.
 - `portaldb.txt`  
   Enthält die konfigurierten Einträge im zeilenbasierten Codex-Format.
@@ -27,7 +27,7 @@ Ergänzende Regeln:
 - Zeilen, die mit `#` beginnen, werden als Kommentar ignoriert.
 - Wenn in `Value` das Zeichen `|` vorkommt, wird es unterstützt (alles ab dem 3. Feld zählt als Wert).
 
-## UI-Struktur von `portal.mshta`
+## UI-Struktur von `portal.hta`
 Die Anwendung besteht aus zwei Blöcken:
 
 1. **Kopfbereich (Editor)**
@@ -45,7 +45,7 @@ Die Anwendung besteht aus zwei Blöcken:
 Beim Start (`initApp`) passiert:
 1. Fenstergröße wird auf ein kleines Format gesetzt.
 2. `Scripting.FileSystemObject` und `WScript.Shell` werden erzeugt.
-3. Pfad zur `portaldb.txt` wird aus dem Speicherort der `.mshta` gebildet.
+3. Pfad zur `portaldb.txt` wird aus dem Speicherort der `.hta` gebildet.
 4. Wenn `portaldb.txt` fehlt, wird sie mit Kopfzeile erstellt.
 5. Alle Einträge werden geladen und als Buttons gerendert.
 

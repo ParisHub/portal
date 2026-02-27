@@ -1,15 +1,15 @@
-# Plan für `portal.mshta`
+# Plan für `portal.hta`
 
 ## 1) Ziel
-Es soll eine kleine, eigenständige `portal.mshta`-Anwendung für Windows 10 entstehen. Die App liest Konfigurationen aus einer `portaldb.txt`, die im **gleichen Ordner** liegt, und erzeugt daraus dynamische Buttons.
+Es soll eine kleine, eigenständige `portal.hta`-Anwendung für Windows 10 entstehen. Die App liest Konfigurationen aus einer `portaldb.txt`, die im **gleichen Ordner** liegt, und erzeugt daraus dynamische Buttons.
 
 ## 2) Technische Rahmenbedingungen
-- Nur Standard-Mittel von `mshta`/Windows 10 verwenden.
+- Nur Standard-Mittel von HTA/Windows 10 verwenden.
 - Keine Imports, keine externen Bibliotheken, keine zusätzlichen Abhängigkeiten.
 - Falls Hilfslogik benötigt wird, muss sie direkt im eigenen Code enthalten sein.
 
 ## 3) Dateien
-- `portal.mshta` (UI + Logik)
+- `portal.hta` (UI + Logik)
 - `portaldb.txt` (Datenbasis/Konfiguration)
 
 Beide Dateien liegen nebeneinander im selben Verzeichnis.
@@ -33,7 +33,7 @@ Bedeutung pro Zeile:
 3. **Wert**: Parameter für die Aktion (Pfad oder Text).
 
 ## 6) Laufzeitverhalten
-- `portal.mshta` prüft beim Start, ob `portaldb.txt` vorhanden ist.
+- `portal.hta` prüft beim Start, ob `portaldb.txt` vorhanden ist.
 - Wenn Einträge vorhanden sind, wird jede Zeile nach dem Codex geparst.
 - Für jeden gültigen Eintrag wird ein Button mit dem jeweiligen Namen erstellt.
 - Ungültige oder leere Zeilen werden sauber ignoriert (ohne Absturz).
@@ -46,7 +46,7 @@ Bedeutung pro Zeile:
 - Klick auf den Button legt den angegebenen Text direkt in die Zwischenablage.
 
 ## 8) Kopfbereich zum Hinzufügen neuer Einträge
-`portal.mshta` soll einen oberen Eingabebereich erhalten, über den neue Einträge bequem in `portaldb.txt` geschrieben werden können:
+`portal.hta` soll einen oberen Eingabebereich erhalten, über den neue Einträge bequem in `portaldb.txt` geschrieben werden können:
 - Eingabe für **Name**
 - Auswahl/Eingabe für **Typ** (`LocalLink`, `Clipboard`, ...)
 - Eingabe für **Wert**
