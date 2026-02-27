@@ -1,0 +1,341 @@
+<html>
+<head>
+  <title>PORTAL</title>
+  <hta:application
+    id="portalApp"
+    applicationname="PORTAL"
+    border="thin"
+    caption="yes"
+    maximizebutton="no"
+    minimizebutton="yes"
+    singleinstance="yes"
+    sysmenu="yes"
+    scroll="no"
+  />
+  <meta http-equiv="x-ua-compatible" content="IE=9" />
+  <style>
+    body {
+      margin: 0;
+      font-family: Segoe UI, Arial, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      box-sizing: border-box;
+      padding: 12px;
+      gap: 12px;
+    }
+
+    #editor {
+      background: #111827;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    #editor h2 {
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      color: #cbd5e1;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    input, select, button {
+      box-sizing: border-box;
+      border-radius: 6px;
+      border: 1px solid #475569;
+      background: #0b1220;
+      color: #e2e8f0;
+      padding: 6px 8px;
+      font-size: 12px;
+    }
+
+    input, select {
+      flex: 1;
+    }
+
+    button {
+      cursor: pointer;
+      background: #1d4ed8;
+      border-color: #1d4ed8;
+      min-width: 90px;
+    }
+
+    #status {
+      font-size: 11px;
+      color: #94a3b8;
+      min-height: 14px;
+    }
+
+    #content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      background: #0b1220;
+      padding: 12px;
+      overflow: auto;
+    }
+
+    #title {
+      font-size: 24px;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+
+    #buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    #buttons button {
+      width: 100%;
+      background: #0ea5e9;
+      border-color: #0ea5e9;
+    }
+  </style>
+  <script language="javascript">
+    var fso = null;
+    var shell = null;
+    var dbPath = "";
+
+    function initApp() {
+      try {
+        window.resizeTo(560, 560);
+      } catch (e) {}
+
+      try {
+        fso = new ActiveXObject("Scripting.FileSystemObject");
+        shell = new ActiveXObject("WScript.Shell");
+      } catch (e) {
+        setStatus("ActiveX konnte nicht initialisiert werden: " + e.message, true);
+        return;
+      }
+
+      dbPath = getDbPath();
+      ensureDbFile();
+      loadEntries();
+    }
+
+    function getDbPath() {
+      var path = location.pathname;
+      path = decodeURIComponent(path);
+
+      if (path.indexOf("/") === 0 && path.charAt(2) === ":") {
+        path = path.substring(1);
+      }
+
+      path = path.replace(/\//g, "\\");
+      var folder = path.substring(0, path.lastIndexOf("\\"));
+      return folder + "\\portaldb.txt";
+    }
+
+    function ensureDbFile() {
+      if (!fso.FileExists(dbPath)) {
+        var file = fso.CreateTextFile(dbPath, true, true);
+        file.WriteLine("# Name|Type|Value");
+        file.Close();
+        setStatus("Neue portaldb.txt erstellt.", false);
+      }
+    }
+
+    function readDbLines() {
+      var lines = [];
+      if (!fso.FileExists(dbPath)) {
+        return lines;
+      }
+
+      var file = fso.OpenTextFile(dbPath, 1, false, -1);
+      while (!file.AtEndOfStream) {
+        lines.push(file.ReadLine());
+      }
+      file.Close();
+      return lines;
+    }
+
+    function parseLine(line) {
+      var trimmed = trim(line);
+      if (trimmed === "" || trimmed.indexOf("#") === 0) {
+        return null;
+      }
+
+      var parts = trimmed.split("|");
+      if (parts.length < 3) {
+        return null;
+      }
+
+      return {
+        name: trim(parts[0]),
+        type: trim(parts[1]),
+        value: trim(parts.slice(2).join("|"))
+      };
+    }
+
+    function loadEntries() {
+      var holder = document.getElementById("buttons");
+      holder.innerHTML = "";
+
+      var lines = readDbLines();
+      var count = 0;
+
+      for (var i = 0; i < lines.length; i++) {
+        var entry = parseLine(lines[i]);
+        if (!entry || entry.name === "" || entry.type === "") {
+          continue;
+        }
+
+        var btn = document.createElement("button");
+        btn.innerText = entry.name;
+        btn.setAttribute("data-type", entry.type);
+        btn.setAttribute("data-value", entry.value);
+        btn.onclick = function() {
+          runAction(this.getAttribute("data-type"), this.getAttribute("data-value"));
+        };
+
+        holder.appendChild(btn);
+        count++;
+      }
+
+      if (count === 0) {
+        setStatus("Keine Einträge gefunden. Über den Kopfbereich kannst du neue Einträge hinzufügen.", false);
+      } else {
+        setStatus(count + " Eintrag/Einträge geladen.", false);
+      }
+    }
+
+    function runAction(type, value) {
+      var normalizedType = toLower(trim(type));
+      var normalizedValue = stripOptionalQuotes(trim(value));
+
+      if (normalizedType === "locallink") {
+        openLocalLink(normalizedValue);
+      } else if (normalizedType === "clipboard") {
+        copyToClipboard(normalizedValue);
+      } else {
+        setStatus("Unbekannter Typ: " + type, true);
+      }
+    }
+
+    function openLocalLink(targetPath) {
+      if (targetPath === "") {
+        setStatus("LocalLink ohne Pfad.", true);
+        return;
+      }
+
+      try {
+        shell.Run('explorer.exe "' + targetPath + '"', 1, false);
+        setStatus("Explorer geöffnet: " + targetPath, false);
+      } catch (e) {
+        setStatus("Fehler beim Öffnen: " + e.message, true);
+      }
+    }
+
+    function copyToClipboard(text) {
+      try {
+        if (window.clipboardData) {
+          window.clipboardData.setData("Text", text);
+          setStatus("Text in Zwischenablage kopiert.", false);
+          return;
+        }
+
+        var htmlfile = new ActiveXObject("htmlfile");
+        htmlfile.parentWindow.clipboardData.setData("Text", text);
+        setStatus("Text in Zwischenablage kopiert.", false);
+      } catch (e) {
+        setStatus("Fehler beim Kopieren: " + e.message, true);
+      }
+    }
+
+    function addEntry() {
+      var name = trim(document.getElementById("inputName").value);
+      var type = trim(document.getElementById("inputType").value);
+      var value = trim(document.getElementById("inputValue").value);
+
+      if (name === "" || type === "" || value === "") {
+        setStatus("Bitte Name, Typ und Wert ausfüllen.", true);
+        return;
+      }
+
+      var line = name + "|" + type + "|" + value;
+
+      try {
+        var file = fso.OpenTextFile(dbPath, 8, true, -1);
+        file.WriteLine(line);
+        file.Close();
+
+        document.getElementById("inputName").value = "";
+        document.getElementById("inputValue").value = "";
+
+        setStatus("Eintrag gespeichert.", false);
+        loadEntries();
+      } catch (e) {
+        setStatus("Konnte Eintrag nicht speichern: " + e.message, true);
+      }
+    }
+
+    function setStatus(message, isError) {
+      var el = document.getElementById("status");
+      el.style.color = isError ? "#fca5a5" : "#94a3b8";
+      el.innerText = message;
+    }
+
+    function trim(text) {
+      return text.replace(/^\s+|\s+$/g, "");
+    }
+
+    function toLower(text) {
+      return (text || "").toLowerCase();
+    }
+
+    function stripOptionalQuotes(text) {
+      if (text.length >= 2) {
+        if ((text.charAt(0) === '"' && text.charAt(text.length - 1) === '"') ||
+            (text.charAt(0) === "'" && text.charAt(text.length - 1) === "'")) {
+          return text.substring(1, text.length - 1);
+        }
+      }
+      return text;
+    }
+  </script>
+</head>
+<body onload="initApp()">
+  <div id="app">
+    <div id="editor">
+      <h2>Neuen Eintrag in portaldb.txt hinzufügen</h2>
+      <div class="row">
+        <input id="inputName" type="text" placeholder="Name (Button-Text)" />
+      </div>
+      <div class="row">
+        <select id="inputType">
+          <option value="LocalLink">LocalLink</option>
+          <option value="Clipboard">Clipboard</option>
+        </select>
+        <input id="inputValue" type="text" placeholder="Wert (Pfad oder Text)" />
+        <button onclick="addEntry()">Hinzufügen</button>
+      </div>
+      <div id="status"></div>
+    </div>
+
+    <div id="content">
+      <div id="title">PORTAL</div>
+      <div id="buttons"></div>
+    </div>
+  </div>
+</body>
+</html>
